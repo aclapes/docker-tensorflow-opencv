@@ -28,8 +28,9 @@ RUN apt-get install -y \
     libjasper-dev libavformat-dev libpq-dev libxine2-dev libglew-dev \
     libtiff5-dev zlib1g-dev libjpeg-dev libpng12-dev libjasper-dev \
     libavcodec-dev libavformat-dev libavutil-dev libpostproc-dev \
-	libswscale-dev libeigen3-dev libtbb-dev libgtk2.0-dev 
-    # libcudnn7=7.1.4.18-1+cuda9.0 
+    libswscale-dev libeigen3-dev libtbb-dev libgtk2.0-dev \
+    openssh-server
+    # libcudnn7=7.1.4.18-1+cuda9.0
 
 RUN apt-get install -y \
     python3-dev \
@@ -48,7 +49,7 @@ RUN pip3 --no-cache-dir install \
     py3nvml
 
 # Install tensorflow
-RUN pip3 --no-cache-dir install tensorflow-gpu==1.8.0
+RUN pip3 --no-cache-dir install tensorflow-gpu==1.13.1
 
 # Set the library path to use cuda and cupti
 ENV LD_LIBRARY_PATH /usr/local/cuda/extras/CUPTI/lib64:/usr/local/cuda/lib64:$LD_LIBRARY_PATH
@@ -120,4 +121,22 @@ RUN wget https://github.com/opencv/opencv/archive/$OPENCV_VERSION.zip \
 
 ## Compress the openCV files so you can extract them from the docker easily 
 # RUN tar cvzf opencv-$OPENCV_VERSION.tar.gz --directory=$OPENCV_INSTALL_PATH .
-WORKDIR /home
+#WORKDIR /home
+#RUN useradd -rm -d /home/aclapes -s /bin/bash -g root -G sudo -u 1000 aclapes
+#USER aclapes
+#WORKDIR /home/aclapes
+
+#EXPOSE 22
+RUN mkdir /var/run/sshd
+RUN echo 'root:D0ck3r1sL1f3' | chpasswd
+RUN sed -i 's/PermitRootLogin prohibit-password/PermitRootLogin yes/' /etc/ssh/sshd_config
+
+# SSH login fix. Otherwise user is kicked off after login
+RUN sed 's@session\s*required\s*pam_loginuid.so@session optional pam_loginuid.so@g' -i /etc/pam.d/sshd
+
+ENV NOTVISIBLE "in users profile"
+RUN echo "export VISIBLE=now" >> /etc/profile
+
+EXPOSE 22
+CMD ["/usr/sbin/sshd", "-D"]
+#ENTRYPOINT ["/usr/sbin/sshd", "-D"]
